@@ -87,6 +87,7 @@ def _read_exelem(filename):
     return elems, scale_factors
 
 def ipnode_to_fem_format(nodes, elements, scale_factors):
+    print 'Converting from ipnode format to global DOFs vectors'
     #num_nodes_per_elem = 8
     num_derivs = 8
     num_nodes = len(nodes)
@@ -123,6 +124,7 @@ def ipnode_to_fem_format(nodes, elements, scale_factors):
             n_global_dof_end += 1
 
     """
+    # Connectivity for Hermite elements - latent capability.
     # Global DOFs to elements mapping.
     global_dofs_local_elem_map = np.zeros((num_nodes_per_elem*num_derivs, num_elems))
     # Elements 1 to 4 are special apical elements that require node numbering using additional nodes.
@@ -163,6 +165,7 @@ def ipnode_to_fem_format(nodes, elements, scale_factors):
     return global_dofs_param
 
 def fem_format_to_ipnode(global_dofs_param):
+    print 'Convert from global DOFs vectors into ipnode format.'
     nodes = []
     for n in range(0, 34):
         if n == 0:
@@ -203,7 +206,43 @@ def fem_format_to_ipnode(global_dofs_param):
         nodes.append(component)
     return nodes
 
+def hermite_to_bezier(fem_hermite, h_to_b_matrix):
+    print 'Converting Hermite DOFs to Bezier DOFs.'
+    fem_bezier = np.zeros(fem_hermite.shape) # Initialise Bezier parameters matrix using shape of Hermite matrix.
+    num_derivs = 8
+    # Convert the Hermite DOFs to Bezier DOFs - being consistent with ordering of derivatives in the global_dofs_param.
+    for c in range(0, 3):
+        n_dof = 0
+        for n in range(0, 40):
+            fem_hermite_temp = fem_hermite[n_dof:n_dof + 8, c]
+            for d_row in range(0, num_derivs):
+                temp = 0
+                for d_column in range(0, num_derivs):
+                    temp += fem_hermite_temp[d_column] * h_to_b_matrix[d_row, d_column]
+                fem_bezier[n_dof, c] = temp
+                n_dof += 1
+    return fem_bezier
+
+def bezier_to_hermite(fem_bezier, h_to_b_matrix):
+    print 'Converting Bezier DOFs to Hermite DOFs'
+    fem_hermite = np.zeros(fem_bezier.shape)  # Initialise Hermite parameters matrix using shape of Bezier matrix.
+    num_derivs = 8
+    Hg = np.linalg.inv(h_to_b_matrix)  # Inverse the h-to-b conversion matrix to convert from B to H.
+    # Convert the Bezier DOFs to Hermite DOFs - being consistent with ordering of derivatives in the global_dofs_param.
+    for c in range(0, 3):
+        n_dof = 0
+        for n in range(0, 40):
+            fem_bezier_temp = fem_bezier[n_dof:n_dof + 8, c]
+            for d_row in range(0, num_derivs):
+                temp = 0
+                for d_column in range(0, num_derivs):
+                    temp += fem_bezier_temp[d_column] * Hg[d_row, d_column]
+                fem_hermite[n_dof, c] = temp
+                n_dof += 1
+    return fem_hermite
+
 def export_geometry(nodes, filename):
+    print 'Exporting current geometry to '+filename + '.ipnode and '+filename + '.exnode files.'
     # Write out ipnode file.
     with open(filename + '.ipnode', 'w') as f:
         f.write(' CMISS Version 2.1  ipnode File Version 2\n')
@@ -220,10 +259,9 @@ def export_geometry(nodes, filename):
         for n in range(0, len(nodes)):
             f.write(' Node number [     ' + str(n + 1) + ']:      ' + str(n + 1) + '\n')
             if n in [0, 17]:
-                f.write(' The number of versions for nj=1 is [1]:  4\n')
                 for c in range(0, 3):
+                    f.write(' The number of versions for nj='+str(c+1)+' is [1]:  4\n')
                     for v in range(0, 4):
-                        print n, c, v
                         f.write(' For version number '+str(v+1)+':\n')
                         f.write(' The Xj(' + str(c + 1) + ') coordinate is [ 0.66029E+02]:    '
                                 + str(nodes[n][c][v][0]) + '\n')
@@ -244,7 +282,7 @@ def export_geometry(nodes, filename):
                 f.write('\n')
             else:
                 for c in range(0, 3):
-                    f.write(' The number of versions for nj=1 is [1]:  1\n')
+                    f.write(' The number of versions for nj='+str(c+1)+' is [1]:  1\n')
                     f.write(' The Xj('+str(c+1)+') coordinate is [ 0.66029E+02]:    '+str(nodes[n][c][0][0])+'\n')
                     f.write(' The derivative wrt direction 1 is [ 0.00000E+00]:  '+str(nodes[n][c][0][1])+'\n')
                     f.write(' The derivative wrt direction 2 is [-0.74612E-01]:  '+str(nodes[n][c][0][2])+'\n')
@@ -303,39 +341,6 @@ def export_geometry(nodes, filename):
                 f.write('\n')
     # Export to exelem file - 1.0 scale factors since they are now included in the nodes.
 
-def hermite_to_bezier(fem_hermite, h_to_b_matrix):
-    fem_bezier = np.zeros(fem_hermite.shape) # Initialise Bezier parameters matrix using shape of Hermite matrix.
-    num_derivs = 8
-    # Convert the Hermite DOFs to Bezier DOFs - being consistent with ordering of derivatives in the global_dofs_param.
-    for c in range(0, 3):
-        n_dof = 0
-        for n in range(0, 40):
-            fem_hermite_temp = fem_hermite[n_dof:n_dof + 8, c]
-            for d_row in range(0, num_derivs):
-                temp = 0
-                for d_column in range(0, num_derivs):
-                    temp += fem_hermite_temp[d_column] * h_to_b_matrix[d_row, d_column]
-                fem_bezier[n_dof, c] = temp
-                n_dof += 1
-    return fem_bezier
-
-def bezier_to_hermite(fem_bezier, h_to_b_matrix):
-    fem_hermite = np.zeros(fem_bezier.shape)  # Initialise Hermite parameters matrix using shape of Bezier matrix.
-    num_derivs = 8
-    Hg = np.linalg.inv(h_to_b_matrix)  # Inverse the h-to-b conversion matrix to convert from B to H.
-    # Convert the Bezier DOFs to Hermite DOFs - being consistent with ordering of derivatives in the global_dofs_param.
-    for c in range(0, 3):
-        n_dof = 0
-        for n in range(0, 40):
-            fem_bezier_temp = fem_bezier[n_dof:n_dof + 8, c]
-            for d_row in range(0, num_derivs):
-                temp = 0
-                for d_column in range(0, num_derivs):
-                    temp += fem_bezier_temp[d_column] * Hg[d_row, d_column]
-                fem_hermite[n_dof, c] = temp
-                n_dof += 1
-    return fem_hermite
-
 def main():
     # Import tricubic Hermite model from CIM models.
     node_file = 'DSWall.ipnode' # Temporarily
@@ -346,8 +351,8 @@ def main():
 
     # Read in conversion matrices
     h_to_b_matrix = np.loadtxt('h_to_b_matrix.txt', dtype='float')
-    #BH = np.loadtxt('BH.txt', dtype='float')
-    #HB = np.loadtxt('HB.txt', dtype='float')
+    #BH = np.loadtxt('BH.txt', dtype='float') # For mapping connectivity from Bezier to Hermite. - latent capability
+    #HB = np.loadtxt('HB.txt', dtype='float') # For mapping connectivity from Hermite to Bezier. - latent capability
 
     # Convert into finite element format for tricubic Hermite
     fem_hermite = ipnode_to_fem_format(nodes, elements, scale_factors)
@@ -360,6 +365,7 @@ def main():
     nodes_back = fem_format_to_ipnode(fem_hermite_back)
     export_geometry(nodes_back, 'DSWall_back')
 
+    print 'Completed without crashing.'
 
 if __name__ == '__main__':
     main()
