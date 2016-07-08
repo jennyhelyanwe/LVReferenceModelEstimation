@@ -86,8 +86,8 @@ def _read_exelem(filename):
         i += 1
     return elems, scale_factors
 
-def ipnode_to_fem_format(nodes, elements, scale_factors):
-    print 'Converting from ipnode format to global DOFs vectors'
+def _ipnode_to_fem_format(nodes, elements, scale_factors):
+    #print 'Converting from ipnode format to global DOFs vectors'
     #num_nodes_per_elem = 8
     num_derivs = 8
     num_nodes = len(nodes)
@@ -164,8 +164,8 @@ def ipnode_to_fem_format(nodes, elements, scale_factors):
     """
     return global_dofs_param
 
-def fem_format_to_ipnode(global_dofs_param):
-    print 'Convert from global DOFs vectors into ipnode format.'
+def _fem_format_to_ipnode(global_dofs_param):
+    #print 'Convert from global DOFs vectors into ipnode format.'
     nodes = []
     for n in range(0, 34):
         if n == 0:
@@ -206,8 +206,8 @@ def fem_format_to_ipnode(global_dofs_param):
         nodes.append(component)
     return nodes
 
-def hermite_to_bezier(fem_hermite, h_to_b_matrix):
-    print 'Converting Hermite DOFs to Bezier DOFs.'
+def _hermite_dofs_to_bezier_dofs(fem_hermite, h_to_b_matrix):
+    #print 'Converting Hermite DOFs to Bezier DOFs.'
     fem_bezier = np.zeros(fem_hermite.shape) # Initialise Bezier parameters matrix using shape of Hermite matrix.
     num_derivs = 8
     # Convert the Hermite DOFs to Bezier DOFs - being consistent with ordering of derivatives in the global_dofs_param.
@@ -223,8 +223,8 @@ def hermite_to_bezier(fem_hermite, h_to_b_matrix):
                 n_dof += 1
     return fem_bezier
 
-def bezier_to_hermite(fem_bezier, h_to_b_matrix):
-    print 'Converting Bezier DOFs to Hermite DOFs'
+def _bezier_dofs_to_hermite_dofs(fem_bezier, h_to_b_matrix):
+    #print 'Converting Bezier DOFs to Hermite DOFs'
     fem_hermite = np.zeros(fem_bezier.shape)  # Initialise Hermite parameters matrix using shape of Bezier matrix.
     num_derivs = 8
     Hg = np.linalg.inv(h_to_b_matrix)  # Inverse the h-to-b conversion matrix to convert from B to H.
@@ -241,8 +241,8 @@ def bezier_to_hermite(fem_bezier, h_to_b_matrix):
                 n_dof += 1
     return fem_hermite
 
-def export_geometry(nodes, filename):
-    print 'Exporting current geometry to '+filename + '.ipnode and '+filename + '.exnode files.'
+def _export_geometry(nodes, filename):
+    #print 'Exporting current geometry to '+filename + '.ipnode and '+filename + '.exnode files.'
     # Write out ipnode file.
     with open(filename + '.ipnode', 'w') as f:
         f.write(' CMISS Version 2.1  ipnode File Version 2\n')
@@ -341,29 +341,150 @@ def export_geometry(nodes, filename):
                 f.write('\n')
     # Export to exelem file - 1.0 scale factors since they are now included in the nodes.
 
-def main():
-    # Import tricubic Hermite model from CIM models.
-    node_file = 'DSWall.ipnode' # Temporarily
-    # hard-coded.
-    elem_file = 'DSWall.exelem'
+def _get_volume(filename, ds):
+    # Get total volume of the model (use epi volume from CIM).
+    try:
+        f = open(filename + '_AY', 'r')
+    except IOError:
+        f = open(filename + '_ZJW', 'r')
+
+    data = f.readlines()
+    temp = data.index('TOTAL\r\n')
+    volume = data[temp + 2].split()[int(ds)+1]
+    return volume
+
+def hermite_to_bezier(filename_no_extension, h_to_b_matrix):
+    node_file = filename_no_extension + '.ipnode'
+    elem_file = filename_no_extension + '.exelem'
     nodes = _read_ipnode(node_file)
     [elements, scale_factors] = _read_exelem(elem_file)
+    # Convert ipnode format into DOFs vectors.
+    fem_hermite = _ipnode_to_fem_format(nodes, elements, scale_factors)
+    # Convert from Hermite DOFs into Bezier DOFs
+    fem_bezier = _hermite_dofs_to_bezier_dofs(fem_hermite, h_to_b_matrix)
+    return fem_bezier
 
+def bezier_to_hermite(filename_no_extension, fem_bezier, h_to_b_matrix):
+    fem_hermite = _bezier_dofs_to_hermite_dofs(fem_bezier, h_to_b_matrix)
+    nodes = _fem_format_to_ipnode(fem_hermite)
+    _export_geometry(nodes, filename_no_extension)
+
+def main():
     # Read in conversion matrices
     h_to_b_matrix = np.loadtxt('h_to_b_matrix.txt', dtype='float')
     #BH = np.loadtxt('BH.txt', dtype='float') # For mapping connectivity from Bezier to Hermite. - latent capability
     #HB = np.loadtxt('HB.txt', dtype='float') # For mapping connectivity from Hermite to Bezier. - latent capability
 
-    # Convert into finite element format for tricubic Hermite
-    fem_hermite = ipnode_to_fem_format(nodes, elements, scale_factors)
+    # Get list of studies
+    filename = os.environ['PARAM_ESTIMATION'] + '/NYStFranFrameNumber_UsedForAnalysis.txt'
+    f = open(filename, 'r')
 
-    # Convert tricubic Hermite parameters into tricubic Bezier parameters.
-    fem_bezier = hermite_to_bezier(fem_hermite, h_to_b_matrix)
+    study_ids = []
+    study_frames = []
+    study_info = f.readline()
+    num_studies = 0
+    while len(study_info) != 0:  # Reaching the end of the file
+        study_ids.append(study_info.split()[0])
+        study_frames.append(study_info.split()[1:5])
+        study_info = f.readline()
+        num_studies = len(study_ids)
 
-    # Just to check, convert Bezier back to Hermite and output to exnode file.
-    fem_hermite_back = bezier_to_hermite(fem_bezier, h_to_b_matrix)
-    nodes_back = fem_format_to_ipnode(fem_hermite_back)
-    export_geometry(nodes_back, 'DSWall_back')
+    # Get matrix of all DS dofs in Bezier basis function.
+    bezier_dofs_matrix = np.zeros((960, num_studies))
+    for i in range(0, num_studies):
+        study_id = study_ids[i]
+        study_frame = study_frames[i]
+        #print 'Convert study '+study_id+' DS frame into Bezier DOFs. '
+        ds, ed, es, tot = tuple(study_frame)
+        filename_no_extension = os.environ['GEOM_DATA'] + study_id + '/Passive/' + study_id + '_' + str(ds)
+        bezier_dofs = hermite_to_bezier(filename_no_extension, h_to_b_matrix)
+        bezier_dofs_matrix[:, i] = np.reshape(bezier_dofs, [960])
+
+    # Evaluate averaged DS geometry using Bezier matrix.
+    print 'Evaluating averaged geometry'
+    bezier_dofs_average = np.mean(bezier_dofs_matrix, 1)
+    #print bezier_dofs_average
+
+    # Visualise averaged geometry.
+    #reshaped_average = np.reshape(bezier_dofs_average, [320, 3])
+    #print reshaped_average
+    #bezier_to_hermite('AveragedDSGeometry', reshaped_average, h_to_b_matrix)
+
+    # Get volume for each model to weigh the vectors with.
+    volumes = np.zeros(num_studies)
+    for i in range(0, num_studies):
+        study_id = study_ids[i]
+        study_frame = study_frames[i]
+        ds, ed, es, tot = tuple(study_frame)
+        filename = os.environ['CIM_MODELS'] + 'Studies/' + study_id + '/volumes/info/' + study_id + \
+                   '_model_ca.model_' + study_id
+        volumes[i] = _get_volume(filename, ds)
+
+    # Evaluate covariance matrix.
+    print 'Evaluating covariance matrix'
+    B = np.zeros(bezier_dofs_matrix.shape)
+    for i in range(0, 960):
+        for j in range(0, num_studies):
+            B[i, j] = (bezier_dofs_matrix[i, j] - bezier_dofs_average[i])/volumes[j]
+    #print B
+    B_t = np.transpose(B)
+    C = np.dot(B, B_t)
+    for i in range(0, 960):
+        for j in range(0, 960):
+            C[i, j] = C[i, j] / num_studies
+
+    # Perform eigen analysis.
+    print 'Performing eigen analysis'
+    [coefficients, modes] = np.linalg.eig(C)
+    sort_mapping = np.argsort(coefficients)[::-1] # Reverses the order to be descending.
+    sorted_coeffs = np.zeros(coefficients.shape)
+    sorted_modes = np.zeros(modes.shape)
+    for i in range(0, len(sort_mapping)):
+        sorted_coeffs[i] = coefficients[sort_mapping[i]]
+        sorted_modes[:, i] = modes[:, sort_mapping[i]]
+
+    # Write out modes to text file.
+    print 'Write out sorted modes and population coefficients to text file.'
+    with open('Modes_'+str(num_studies)+'studies.txt', 'w') as f:
+        for i in range(0, len(sort_mapping)):
+            for j in range(0, len(sorted_modes[:, i])):
+                f.write(str(sorted_modes[j, i]))
+                f.write('\t')
+            f.write('\n')
+
+    with open('PopulationModeCoefficients_'+str(num_studies)+'studies.txt', 'w') as f:
+        for i in range(0, len(sorted_coeffs)):
+            f.write(str(sorted_coeffs[i]))
+            f.write('\t')
+    """
+    # Project STF_01 DS geometry to 5 modes, and get coefficients.
+    num_modes = 4
+    reduced_modes = sorted_modes[:, 0:num_modes]
+
+    k_STF_01 = np.zeros(reduced_modes[0, :].shape)
+    bezier_STF_01 = bezier_dofs_matrix[:, 0]
+    test = np.reshape(bezier_STF_01, [320, 3])
+    bezier_to_hermite('Pre-reconstruction_STF_01', test, h_to_b_matrix)
+
+    bezier_STF_01_reshaped = np.reshape(bezier_STF_01, [960])
+    temp = (bezier_STF_01_reshaped - bezier_dofs_average)/volumes[0]
+    reduced_modes_transpose = np.transpose(reduced_modes)
+    #print reduced_modes_transpose.shape
+    #print temp.shape
+    k_STF_01 = np.dot(reduced_modes_transpose, temp)
+    print 'Coefficients for ' + str(num_modes) + ' modes to describe STF_01:'
+    print k_STF_01
+
+    # Reconstruct STF_01 DS geometry using those coefficients and modes - check how well it matches.
+    print 'Reconstructing STF_01 using ' + str(num_modes) + ' modes'
+    bezier_STF_01_back = bezier_dofs_average
+    for i in range(0, num_modes):
+        bezier_STF_01_back = bezier_STF_01_back + k_STF_01[i] * reduced_modes[:, i] * volumes[0]
+
+    # Convert to Hermite and export.
+    bezier_STF_01_back_reshaped = np.reshape(bezier_STF_01_back, [320, 3])
+    bezier_to_hermite('ReconstructSTF_01', bezier_STF_01_back_reshaped, h_to_b_matrix)
+    """
 
     print 'Completed without crashing.'
 
