@@ -1,0 +1,119 @@
+ CMISS Version 1.21 ippara File Version 1
+ Heading:
+ 
+ Max# auxiliary parameters          (NAM)[1]:         5
+ Max# basis functions               (NBM)[1]:        42
+ Max# var. types for a  dep. var.   (NCM)[1]:         2
+ Max# data points                   (NDM)[1]:	  10000
+ Max# elements                      (NEM)[1]:       200
+ Max# elements in a region       (NE_R_M)[1]:       200
+ Max# adjacent elements in Xi      (NEIM)[1]:       120
+ Max# global face segments          (NFM)[1]:       1220
+ Max# faces in a region          (NF_R_M)[1]:       1220
+ Max# local Voronoi faces         (NFVCM)[1]:         6
+ Max# Gauss points per element      (NGM)[1]:        81
+ Max# dependent variables           (NHM)[1]:         6
+ Max# local Xi coordinates          (NIM)[1]:         3
+ Max# global reference coordinates  (NJM)[1]:        16
+ Max# derivatives per variable      (NKM)[1]:         8
+ Max# global line segments          (NLM)[1]:       11259
+ Max# lines in a region          (NL_R_M)[1]:       11259
+ Max# material parameters           (NMM)[1]:        35
+ Max# element nodes                 (NNM)[1]:        12
+ Max# degrees of freedom            (NOM)[1]:       5450
+ Max# global nodes                  (NPM)[1]:      2200
+ Max# global nodes in a region   (NP_R_M)[1]:      2200
+ Max# global grid points            (NQM)[1]:      4225
+ Max# signal sets                  (NSSM)[1]:         1
+ Max# grid degrees of freedom      (NYQM)[1]:         1
+ Max# regions                       (NRM)[1]:         6
+ Max# element dofs per variable     (NSM)[1]:        64
+ Max# face dofs per variable       (NSFM)[1]:        16
+ Max# eigenvalues                   (NTM)[1]:        20
+ Max# time samples                 (NTSM)[1]:       200
+ Max# derivatives up to 2nd order   (NUM)[1]:        11
+ Max# Voronoi boundary nodes      (NVCBM)[1]:       100
+ Max# Voronoi cells                (NVCM)[1]:       200
+ 
+ Max# versions of a variable        (NVM)[1]:        16
+ Max# workstations                  (NWM)[1]:         3
+ Max# problem types                 (NXM)[1]:         3
+ Max# mesh dofs                     (NYM)[1]:       54500
+ Max# mesh dofs in a region      (NY_R_M)[1]:       54500
+ Max# dimension of GD           (NZ_GD_M)[1]:     202500
+ Max# dimension of GK           (NZ_GK_M)[1]:    22025000
+ Max# dimension of GKK         (NZ_GKK_M)[1]:    22025000
+ Max# dimension of GM           (NZ_GM_M)[1]:    2025000
+ Max# dimension of GMM         (NZ_GMM_M)[1]:    2025000
+ Max# dimension of GQ           (NZ_GQ_M)[1]:    202500
+ Max# dimension of ISC_GD      (NISC_GDM)[1]:    220250
+ Max# dimension of ISR_GD      (NISR_GDM)[1]:       5451
+ Max# dimension of ISC_GK      (NISC_GKM)[1]:    220250
+ Max# dimension of ISR_GK      (NISR_GKM)[1]:       5451
+ Max# dimension of ISC_GKK    (NISC_GKKM)[1]:    220250
+ Max# dimension of ISR_GKK    (NISR_GKKM)[1]:       5451
+ Max# dimension of ISC_GM      (NISC_GMM)[1]:    220250
+ Max# dimension of ISR_GM      (NISR_GMM)[1]:       5451
+ Max# dimension of ISC_GMM    (NISC_GMMM)[1]:    220250
+ Max# dimension of ISR_GMM    (NISR_GMMM)[1]:       5451
+ Max# dimension of ISC_GQ      (NISC_GQM)[1]:    220250
+ Max# dimension of ISR_GQ      (NISR_GQM)[1]:       5451
+ Max# size of Minos arrays    (NZ_MINOSM)[1]:      2625
+ Max# basis function families      (NBFM)[1]:        13
+ Max# nonlin. optim.n constraints  (NCOM)[1]:        20
+ Max# data points in one element   (NDEM)[1]:       500
+ Max# dipoles in a region      (NDIPOLEM)[1]:        20
+ Max# time points for a dipole (NDIPTIMM)[1]:       500
+ Max# elements along a line        (NELM)[1]:        16
+ Max# elements a node can be in    (NEPM)[1]:        20
+ Max# segments                  (NGRSEGM)[1]:         6
+ Max# variables per grid point     (NIQM)[1]:         20
+ Max# cell state variables        (NIQSM)[1]:         0
+ Max# variables for fibre extens(NIFEXTM)[1]:         8
+ Max# variables per mesh dof       (NIYM)[1]:        16
+ Max# variables / mesh dof(fix) (NIYFIXM)[1]:         5
+ Max# vars. at each gauss point   (NIYGM)[1]:         6
+ Max# vars. at face gauss points (NIYGFM)[1]:         0
+ Max# linear optimis.n constraints (NLCM)[1]:         1
+ Max# auxiliary grid parameters   (NMAQM)[1]:         6
+ Max# cell material parameters     (NMQM)[1]:         0
+ Max# optimisation variables       (NOPM)[1]:       1250
+ Max size fractal tree order array (NORM)[1]:        20
+ Max# soln dofs for mesh dof       (NOYM)[1]:         1
+ Max# domain nodes for BE problems (NPDM)[1]:         1
+ Max# grid points per element      (NQEM)[1]:        81
+ Max# non-zeros in grid matrix row (NQGM)[1]:        22
+ Max# cell integer variables       (NQIM)[1]:         1
+ Max# cell real variables          (NQRM)[1]:         1
+ Max# spatial var cell int vars  (NQISVM)[1]:         1
+ Max# spatial var cell real vars (NQRSVM)[1]:         1
+ Max# number of grid schemes      (NQSCM)[1]:         9
+ Max# cell variants                (NQVM)[1]:         0
+ Max# rows and columns (sb 2)      (NRCM)[1]:         2
+ Max# optimisation residuals       (NREM)[1]:       5000
+ Max# time points          (NTIMEPOINTSM)[1]:         1
+ Max# time variables         (NTIMEVARSM)[1]:         1
+ Max# mesh dofs for soln dof       (NYOM)[1]:         40
+ Max# rows in a problem          (NYROWM)[1]:       5450
+ Max image cell array dimension (NIMAGEM)[1]:         1
+ Size of transfer matrix  (NY_TRANSFER_M)[1]:       200
+ Max# mesh dofs map to 1 mesh dof  (NYYM)[1]:        2
+ USE_BEM       (0 or 1)[1]: 1
+ USE_CELL      (0 or 1)[1]: 0
+ USE_DATA      (0 or 1)[1]: 1
+ USE_DIPOLE    (0 or 1)[1]: 1
+ USE_GAUSS_PT_MATERIALS  (0 or 1)[0]: 1
+ USE_GRAPHICS  (0 or 1)[1]: 1
+ USE_GRID      (0 or 1)[1]: 1
+ USE_LUNG      (0 or 1)[1]: 1
+ USE_MAGNETIC  (0 or 1)[0]: 0
+ USE_MAPS      (0 or 1)[0]: 1
+ USE_MINOS     (0 or 1)[1]: 0
+ USE_NLSTRIPE  (0 or 1)[1]: 1
+ USE_NONLIN    (0 or 1)[1]: 1
+ USE_NPSOL     (0 or 1)[1]: 1
+ USE_SPARSE    (0 or 1)[1]: 1
+ USE_TRANSFER  (0 or 1)[1]: 1
+ USE_TRIANGLE  (0 or 1)[1]: 0
+ USE_VORONOI   (0 or 1)[1]: 0
+ USE_TIME      (0 or 1)[1]: 1
