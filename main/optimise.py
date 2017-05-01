@@ -3,6 +3,7 @@ import nlopt
 from simulation_opencmiss import *
 from scipy.optimize import fmin_l_bfgs_b
 from bkcolours import *
+import time
 
 
 class Optimise:
@@ -29,60 +30,64 @@ class Optimise:
         os.system('cp ' + reference_model_init + '.ipelem ' + self.work_dir + '/ReferenceWall.ipelem')
         print 'OPTIMISE: Initialise simulation... '
         self.simulation = Simulation(self.study_id, self.study_frame, self.study_idx, self.synth_ds_num)
+        self.iter_count = 0
 
     def optimise(self):
         # Optimisation set up.
-        scores_init = [(self.geometry.scores[self.study_idx][0]-30)/100.0]
+        scores_init = self.geometry.scores[self.study_idx][0]
+        #scores_init = 9.0
         print scores_init
         #scores_init = [self.geometry.scores[self.study_idx][0]/100.0, self.geometry.scores[self.study_idx][1]/10.0,
         #               self.geometry.scores[self.study_idx][2]/10.0]
-        """
+
         opt = nlopt.opt(nlopt.LN_COBYLA, 1)
         opt.set_min_objective(lambda x, grad: self.objective_function(x))
-        opt.set_lower_bounds(-100)
-        opt.set_upper_bounds(100)
-        opt.set_initial_step(-0.1)
-        opt.set_ftol_abs(0.1)
-        opt.set_ftol_rel(0.1)
-        opt.set_maxeval(300)
-        """
-        opt = nlopt.opt(nlopt.LD_SLSQP, 1)
-        opt.set_min_objective(lambda x, grad: self.objective_function(x))
-        opt.set_lower_bounds(-100)
-        opt.set_upper_bounds(100)
+        opt.set_lower_bounds(-200)
+        opt.set_upper_bounds(200)
         opt.set_initial_step(0.1)
-        opt.set_ftol_abs(1e-5)
-        opt.set_ftol_rel(1e-5)
+        opt.set_ftol_abs(1e-20)
+        opt.set_ftol_rel(1e-6)
+        opt.set_xtol_abs(1e-24)
+        opt.set_xtol_rel(1e-20)
+        #opt.set_ftol_rel(1e-5)
         opt.set_maxeval(300)
+        print bkcolours.OKGREEN + 'OPTIMISE: ftol_rel: ' + str(opt.get_ftol_rel()) + ', ftol_abs: '+ str(opt.get_ftol_abs()) + bkcolours.ENDC
+        print bkcolours.OKGREEN + 'OPTIMISE: xtol_rel: ' + str(opt.get_xtol_rel()) + ', xtol_abs: ' + str(opt.get_xtol_abs()) + bkcolours.ENDC
+        print bkcolours.OKGREEN + 'OPTIMISE: initial step: ' + str(opt.get_initial_step()) + bkcolours.ENDC
+        print bkcolours.OKGREEN + 'OPTIMISE: Upper bounds: ' + str(opt.get_upper_bounds()) + ', lower bounds: ' + str(opt.get_lower_bounds()) + bkcolours.ENDC
         # Perform optimisation
-        self.scores_opt = opt.optimize(scores_init)
+        start_time = time.time()
+        self.scores_opt = opt.optimize([scores_init])
+        self.elapsed_time = time.time() - start_time
 
         # Get optimal results.
         self.opt_val = opt.last_optimum_value()
         self.result = opt.last_optimize_result()
         self._display_results()
         # Double check optimised results.
-        mse = self.objective_function(self.scores_opt)
-        if (mse - self.opt_val) < 1e-4:
-            print 'Double checked objective function at optimised C1. '
-        else:
-            print bkcolours.FAIL + 'ERROR: Objective function at optimal C1: ' + str(
-                mse) + ' doesn''t match what optimiser ' \
-                       'gives: ' + str(self.opt_val) + bkcolours.ENDC
+        # mse = self.objective_function(self.scores_opt)
+        # if (mse - self.opt_val) < 1e-4:
+        #     print 'Double checked objective function at optimised C1. '
+        # else:
+        #     print bkcolours.FAIL + 'ERROR: Objective function at optimal C1: ' + str(
+        #         mse) + ' doesn''t match what optimiser ' \
+        #                'gives: ' + str(self.opt_val) + bkcolours.ENDC
         # Copy over optimised reference model to next bootstrap iteration.
-        os.system('cp ReferenceWall.exnode '+os.environ['REFERENCE_MODELS'] + '/b' + str(
-            self.bootstrap_itr+1)+'/'+self.study_id+'.exnode')
-        os.system('cp ReferenceWall.exelem ' + os.environ['REFERENCE_MODELS'] + '/b' + str(
-            self.bootstrap_itr + 1) + '/' + self.study_id + '.exelem')
-        os.system('cp ReferenceWall.ipnode ' + os.environ['REFERENCE_MODELS'] + '/b' + str(
-            self.bootstrap_itr + 1) + '/' + self.study_id + '.ipnode')
-        os.system('cp ReferenceWall.ipelem ' + os.environ['REFERENCE_MODELS'] + '/b' + str(
-            self.bootstrap_itr + 1) + '/' + self.study_id + '.ipelem')
+        # os.system('cp ReferenceWall.exnode '+os.environ['REFERENCE_MODELS'] + '/b' + str(
+        #     self.bootstrap_itr+1)+'/'+self.study_id+'.exnode')
+        # os.system('cp ReferenceWall.exelem ' + os.environ['REFERENCE_MODELS'] + '/b' + str(
+        #     self.bootstrap_itr + 1) + '/' + self.study_id + '.exelem')
+        # os.system('cp ReferenceWall.ipnode ' + os.environ['REFERENCE_MODELS'] + '/b' + str(
+        #     self.bootstrap_itr + 1) + '/' + self.study_id + '.ipnode')
+        # os.system('cp ReferenceWall.ipelem ' + os.environ['REFERENCE_MODELS'] + '/b' + str(
+        #     self.bootstrap_itr + 1) + '/' + self.study_id + '.ipelem')
 
     def _display_results(self):
-        print bkcolours.OKGREEN + 'OPTIMISE: The optimised scores for reference model are ' + str(
-            self.scores_opt[0] * 100)  + bkcolours.ENDC
-        print bkcolours.OKGREEN + 'OPTIMISE: The optimised objective function value is ' + str(self.opt_val) + bkcolours.ENDC
+        print bkcolours.OKGREEN + 'OPTIMISE: The optimised scores for reference model: ' + str(
+            self.scores_opt[0])  + bkcolours.ENDC
+        print bkcolours.OKGREEN + 'OPTIMISE: The optimised objective function value: ' + str(self.opt_val) + bkcolours.ENDC
+        print bkcolours.OKGREEN + 'OPTIMISE: Number of function evaluations: ' + str(self.iter_count) + bkcolours.ENDC
+        print bkcolours.OKGREEN + 'OPTIMISE: Elapsed time: ' + str(self.elapsed_time/60) + ' minute(s)' + bkcolours.ENDC
         if self.result > 0:
             print bkcolours.OKGREEN + 'OPTIMISE: Successful termination' + bkcolours.ENDC
             if self.result == 1:
@@ -113,17 +118,19 @@ class Optimise:
                                       'opt).' + bkcolours.ENDC
 
     def objective_function(self, score):
-        print bkcolours.OKGREEN + 'OPTIMISE: Evaluating 1st mode score: ' + str(score*100.0) + bkcolours.ENDC
+        self.iter_count += 1
+        print bkcolours.OKGREEN + 'OPTIMISE: Evaluating 1st mode score: ' + str(score) + bkcolours.ENDC
         os.chdir(os.environ['SIMULATIONS_OPENCMISS'] + '/' + self.study_id + '/')
         scores_scaled = self.geometry.scores[self.study_idx]
-        scores_scaled[0] = score*100
+        scores_scaled[0] = score
         print scores_scaled
 
         # Reconstruct current guess for reference model.
         self.geometry.reconstruct_reference_model(scores_scaled, self.study_idx)
 
         # Perform forward solve.
-        mse = self.simulation.forward_solve(self.study_idx)
+        obj_toggle = 2 # Surface displacement objective function.
+        mse = self.simulation.forward_solve(self.study_idx, obj_toggle)
         return mse
 
     def projection_error(self, study_idx):
@@ -156,7 +163,7 @@ class Optimise:
     def evaluate_hessian(self):
         print 'OPTIMISE: Evaluating Hessian matrix...'
         n = len(self.scores_opt)
-        h = 0.1
+        h = 0.01
         ee = np.zeros([n, n])
         for i in range(0, n):
             ee[i, i] = h
@@ -214,9 +221,3 @@ class Optimise:
 
         print 'OPTIMISE: Scaled Hessian matrix: ' + str(scaled_H)
         print 'OPTIMISE: Determinant of Hessian: ' + str(determinant)
-
-
-
-
-
-

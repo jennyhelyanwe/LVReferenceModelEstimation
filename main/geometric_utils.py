@@ -138,6 +138,32 @@ def export_geometry(nodes, filename):
     # Export to exelem file - 1.0 scale factors since they are now included in the nodes.
 
 
+def export_error(filename, data, vector):
+    with open(filename, 'w') as f:
+        f.write(' Group name: ProjectionError\n')
+        f.write(' #Fields=2\n')
+        f.write(' 1) coordinates, coordinate, rectangular cartesian, #Components=3\n')
+        f.write('   x.  Value index= 1, #Derivatives=0\n')
+        f.write('   y.  Value index= 2, #Derivatives=0\n')
+        f.write('   z.  Value index= 3, #Derivatives=0\n')
+        f.write(' 2) error, field, rectangular cartesian, #Components=3\n')
+        f.write('   x.  Value index= 4, #Derivatives=0\n')
+        f.write('   y.  Value index= 5, #Derivatives=0\n')
+        f.write('   z.  Value index= 6, #Derivatives=0\n')
+        for n in range(0, len(vector)):
+            f.write(' Node:     '+str(n+1)+'\n')
+            f.write('   '+str(data[n][0])+'\t'+str(data[n][1])+'\t'+str(data[n][2]) +
+                    '\n   '+str(vector[n][0])+'\t'+str(vector[n][1]) +
+                    '\t'+str(vector[n][2])+'\n')
+
+
+def evaluate_euclidean_distance(a):
+    euc_dist = []
+    for i in range(0, len(a)):
+        euc_dist.append(np.linalg.norm(a[i]))
+    return euc_dist
+
+
 def ipnode_to_dofs_format(nodes):
     num_derivs = 8
     num_nodes = len(nodes)
@@ -231,12 +257,12 @@ def convert_arithmetic_to_unit_sf(input_filename, output_filename):
 def convert_unit_to_arithmetic_sf(input_filename, output_filename):
     with open('ConvertToArithmeticSF.com', 'r') as f:
         data = f.readlines()
-    data[5] = 'fem def node;r;' + input_filename + '\n'
-    data[6] = 'fem def elem;r;' + input_filename + '\n'
-    data[11] = 'fem exp node;' + output_filename + '\n'
-    data[12] = 'fem exp elem;' + output_filename + '\n'
-    data[13] = 'fem def node;w;' + output_filename + '\n'
-    data[14] = 'fem def elem;w;' + output_filename + '\n'
+    data[5] = 'fem def node;r;'+input_filename+'\n'
+    data[6] = 'fem def elem;r;'+input_filename+'\n'
+    data[10] = 'fem exp node;'+output_filename+'\n'
+    data[11] = 'fem exp elem;'+output_filename+'\n'
+    data[12] = 'fem def node;w;'+output_filename+'\n'
+    data[13] = 'fem def elem;w;'+output_filename+'\n'
     with open('ConvertToArithmeticSF.com', 'w') as f:
         f.writelines(data)
     os.system('cm ConvertToArithmeticSF.com')

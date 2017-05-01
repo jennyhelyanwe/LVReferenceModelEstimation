@@ -27,7 +27,6 @@ class LV:
         self.scaleFactors = numpy.zeros((40, 8))
         self.scalingType = iron.FieldScalingTypes.ARITHMETIC_MEAN
 
-
     def setup(self):
         # Coordiante
         print 'Coordinates and regions and basis setup'
@@ -249,6 +248,57 @@ class LV:
         print 'Current total RMSE for frame '+str(frame_num)+' is '+str(rmse)
         return mse
 
+    def calculate_surface_data(self, filename_epi, filename_endo):
+        # Basal elements
+        endo_data = []
+        epi_data = []
+        xi_endo = numpy.zeros([25, 3])
+        xi_epi = numpy.zeros([25, 3])
+        n = 0
+        for i in range(0, 5):
+            for j in range(0, 5):
+                xi_endo[n, 0] = j * 0.2
+                xi_endo[n, 1] = i * 0.2
+                xi_endo[n, 2] = 0.0
+                xi_epi[n, 0] = j * 0.2
+                xi_epi[n, 1] = i * 0.2
+                xi_epi[n, 2] = 1.0
+                n = n + 1
+        for e in range(1, 5):
+            for n in range(0, len(xi_epi)):
+                temp_endo = self.dependentField.ParameterSetInterpolateSingleXiDP(iron.FieldVariableTypes.U, iron.FieldParameterSetTypes.VALUES, 1, e, xi_endo[n], 4)
+                endo_data.append([temp_endo[0], temp_endo[1], temp_endo[2]])
+                temp_epi = self.dependentField.ParameterSetInterpolateSingleXiDP(iron.FieldVariableTypes.U,
+                                                                                  iron.FieldParameterSetTypes.VALUES, 1,
+                                                                                  e, xi_epi[n], 4)
+                epi_data.append([temp_epi[0], temp_epi[1], temp_epi[2]])
+        # Non basal elements
+        xi_endo = numpy.zeros([100, 3])
+        xi_epi = numpy.zeros([100, 3])
+        n = 0
+        for i in range(0, 10):
+            for j in range(0, 10):
+                xi_endo[n, 0] = j * 1.0/9.0
+                xi_endo[n, 1] = i * 1.0/9.0
+                xi_endo[n, 2] = 0.0
+                xi_epi[n, 0] = j * 1.0/9.0
+                xi_epi[n, 1] = i * 1.0/9.0
+                xi_epi[n, 2] = 1.0
+                n = n + 1
+        for e in range(5, 17):
+            for n in range(0, len(xi_epi)):
+                temp_endo = self.dependentField.ParameterSetInterpolateSingleXiDP(iron.FieldVariableTypes.U,
+                                                                                  iron.FieldParameterSetTypes.VALUES, 1,
+                                                                                  e, xi_endo[n], 4)
+                endo_data.append([temp_endo[0], temp_endo[1], temp_endo[2]])
+                temp_epi = self.dependentField.ParameterSetInterpolateSingleXiDP(iron.FieldVariableTypes.U,
+                                                                                 iron.FieldParameterSetTypes.VALUES, 1,
+                                                                                 e, xi_epi[n], 4)
+                epi_data.append([temp_epi[0], temp_epi[1], temp_epi[2]])
+        self._export_data(filename_epi, epi_data)
+        self._export_data(filename_endo, endo_data)
+        return epi_data, endo_data
+
     def set_pressure(self, pressure, pressure_prev):
         self.endoIncrem = pressure - pressure_prev
         endoIncremLimit = 0.2
@@ -309,6 +359,7 @@ class LV:
         numSteps = self.loadsteps + 1
         for i in range(0, int(numSteps -1)):
             self.baseBCSteps.append(base_coords.tolist())
+            print self.baseBCSteps
 
     def set_t_ca(self, t_ca):
         self.TCa = t_ca
@@ -332,6 +383,22 @@ class LV:
                 f.write('   '+str(temp[0])+'\t'+str(temp[1])+'\t'+str(temp[2]) +
                         '\n   '+str(vector[n][0])+'\t'+str(vector[n][1]) +
                         '\t'+str(vector[n][2])+'\n')
+
+    def _export_data(self, filename, data):
+        with open(filename+'.exdata', 'w') as f:
+            f.write(' Group name: SurfaceData\n')
+            f.write(' #Fields=1\n')
+            f.write(' 1) coordinates, coordinate, rectangular cartesian, #Components=3\n')
+            f.write('   x.  Value index= 1, #Derivatives=0\n')
+            f.write('   y.  Value index= 2, #Derivatives=0\n')
+            f.write('   z.  Value index= 3, #Derivatives=0\n')
+            for n in range(0, len(data)):
+                f.write(' Node:     ' + str(n + 1) + '\n')
+                f.write('   ' + str(data[n][0]) + '\t' + str(data[n][1]) + '\t' + str(data[n][2]) +'\n')
+        with open(filename + '.ipdata', 'w') as f:
+            f.write(' Data file\n')
+            for n in range(0, len(data)):
+                f.write('\t'+ str(n + 1) + '\t' + str(data[n][0]) + '\t' + str(data[n][1]) + '\t' + str(data[n][2]) +'\t1.00\t1.00\t1.00\n')
 
     def _read_def_model(self, current_frame):
         print bkcolours.OKBLUE + 'Reading in warm start solution at frame ' + str(current_frame) + bkcolours.ENDC
@@ -1261,4 +1328,3 @@ class LV:
         export_field.NodesExport("LVCavity_"+key, "FORTRAN")
         export_field.ElementsExport("LVCavity_"+key, "FORTRAN")
         export_field.Finalise()
-

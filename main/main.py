@@ -35,10 +35,10 @@ class Bootstrap:
                                  self.synth_ds_num, self.bootstrap_itr)
         self.optimise.optimise()
         #self.geometry.reconstruct_reference_model([-35.2290237082, -3.70324442358, -0.45519352852], 4)
-        ref_error = self.ref_error_evaluate(study_idx)
-        ds_ref_error = self.ds_to_true_ref_error(study_idx)
-        print 'OPTIMISE: Error between estimated and true reference models is: ' + str(ref_error) + ' mm RMSE.'
-        print 'OPTIMISE: Error between synth DS model and true reference models is: ' + str(ds_ref_error) + ' mm RMSE.'
+        #ref_error = self.ref_error_evaluate(study_idx)
+        #ds_ref_error = self.ds_to_true_ref_error(study_idx)
+        #print 'OPTIMISE: Error between estimated and true reference models is: ' + str(ref_error) + ' mm RMSE.'
+        #print 'OPTIMISE: Error between synth DS model and true reference models is: ' + str(ds_ref_error) + ' mm RMSE.'
         #self.optimise.evaluate_hessian()
 
     def _get_frames(self):
